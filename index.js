@@ -16,10 +16,10 @@ var user = process.env.MONGO_USERID
 var pw = process.env.MONGO_PW
 
 //Const url command
-const uri = "mongodb+srv://" + user + ":" + pw + "https://api.spotify.com/v1/artists/{id}?retryWrites=true&w=majority";
+const uri = "mongodb+srv://" + user + ":" + pw + "@cluster0.dld5m.mongodb.net/?retryWrites=true&w=majority";
 
 //create routes for get all
-app.get('/api/getall', function (req, res){
+app.get('/api/movies', function (req, res){
     //connection object
     const client = new MongoClient(uri, {
         useNewUrlParser:true,
