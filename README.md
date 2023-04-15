@@ -5,12 +5,6 @@ Then I made the Mongo DB database in Atlas so I got this const uri: "mongodb+srv
 I have this page in Render: https://leenas-app-com.onrender.com
 
 I have routed to:
-/
-Home
-/getall
-/:id
-/add
-/remove/:id
-/update/:id
+/  /Home  /getall  /:id  /add  /remove/:id  /update/:id
 
 Tested in POSTMAN
