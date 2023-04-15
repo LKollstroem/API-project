@@ -1,55 +1,64 @@
-//Express, FS and Mongo modules
-var express = require('express');
-var fs = require("fs");
+//Express module
+var express = require("express");
+var app = express();
+
+//BodyParser for form data module
+var bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({ extended: true}));
+
+//require mongodb in use
 const MongoClient = require("mongodb").MongoClient;
 
-//require library into code
-var app = express();
-//require form data module
-var bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({ extended: true}));
-//require env
+//use querystring and axios to be able to get token from Spotify
+const queryString = require("node:querystring");
+const axios = require("axios");
+
+//require env for use with password and username
 require("dotenv").config();
 
-//user id and password
+//user id, password and token
 var user = process.env.MONGO_USERID
-var pw = process.env.MONGO_PW
+var pw = process.env.MONGO_PASSWORD
+var token;
 
-//Const url command
-const uri = "mongodb+srv://" + user + ":" + pw + "@cluster0.dld5m.mongodb.net/?retryWrites=true&w=majority";
-
-//create routes for get all
-app.get('/api/movies', function (req, res){
-    //connection object
-    const client = new MongoClient(uri, {
-        useNewUrlParser:true,
-        useUnifiedTopology:true
-    })
-    async function connectAndFetch(){
-        try{
-        //Mongo connection details here
-        await client.connect();
-        const collection = client.db("sample_mflix").collection("movies");
-        //Make query
-        var result = await collection
-            .find() //empty () for all items
-            .limit(10) // we do not want to get all so limit to 10
-            .toArray()
-        res.send(result);
-
-        } catch(e){
-            console.log(e);
-        }finally {
-            await client.close();
-            console.log("Connection closed to Mongo")
-        }
-
-    }
-    connectAndFetch();
+//create routes for SPOTIFY authorization page
+app.get("/", (req, res) => {
+    res.send(
+      "<a href='https://accounts.spotify.com/authorize?client_id=" +
+      process.env.MONGO_USERID +
+        "&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fhome&scope=user-top-read'>Sign in</a>"
+    );
 });
-  
+//Create routes for redirect page after authorization
+app.get("/home", async (req, res) => {
+    console.log("spotify response code is " + req.query.code);
+    res.send("Home page");
+});
+//route for post request to get token
+app.get("/home", async (req, res) => {
+    const spotifyResponse = await axios.post(
+        "https://accounts.spotify.com/api/token", queryString.stringify({
+          grant_type: "authorization_code",
+          code: req.query.code,
+          redirect_uri: process.env.REDIRECT_URI_DECODED,
+        }),
+        {
+          headers: {
+            Authorization: "Basic " + process.env.BASE64_AUTHORIZATION,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+    );
+    
+    console.log(spotifyResponse.data);
+    token = spotifyResponse.data;
+})
 
 //set web server to listen to port
-app.listen(8081, function(){
-    console.log('Example app listening on port 8081');
+var PORT = process.env.PORT || 8081;
+app.listen(PORT, function(){
+    console.log('App listening on port %d', PORT);
+});
+app.get("/", (req, res) => {
+    res.send("Hello");
 });
