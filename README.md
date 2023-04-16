@@ -1,5 +1,9 @@
 # API-project
+<<<<<<< HEAD
 API used in the beginning as I thought we were supposed to do that too, so I used env. user on that and made a token for further usage. But as I understand we are using mongodb. So I only pulled in my own data from Spotify to the console. MAde one for more data too, but it did not work.
+=======
+API used in the beginning as I thought we were supposed to do that too, so I used env. user on that and made a token for further usage.
+>>>>>>> 2308f4eae7527e06e386c93fc16f1a09d59d6d8f
 
 Then I made the Mongo DB database in Atlas so I got this const uri: "mongodb+srv://leenakollstrom:" + pwAtlas + "@cluster0.0sdore5.mongodb.net/test";
 I have this page in Render: https://leenas-app-com.onrender.com
