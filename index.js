@@ -249,11 +249,11 @@ app.post("/add", function(req, res){
 });
 
 //delete function not working yet
-app.delete("/remove/:id", function(req, res){
+app.delete("/remove/:id", function(req,res){
   res.send("Remove album by " + req.params.id);
 });  
 //put function -- not working
-app.put("/update/:id", function(req, res){
+app.put("/update/:id", function(req,res){
   res.send("Modify album by id " + req.params.id);
 });  
 
@@ -262,6 +262,16 @@ var PORT = process.env.PORT || 8081;
 app.listen(PORT, function(){
     console.log('App listening on port %d', PORT);
 });
+var http = require("http");
+http.createServer(function (request, response) {
+  if(request.url === "/"){
+    response.writeHead(200,{'Content-Type':'text/plain'});
+    var fs = require("fs");
+        var data = fs.readFileSync('index.html');
+        response.write(data.toString());
+        response.end();
+  }      
+})        
 app.get("/", (req, res) => {
-  res.send("First page - The page where you end up when your code for the api is not working");
+  res.sendFile('index.html', {root: __dirname })
 });
