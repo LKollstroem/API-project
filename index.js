@@ -120,54 +120,24 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 //Create routes for home page
-//app.get("/home", async (req, res) => {
-//  res.send("HOME PAGE");
-//});
 //Lets get the firs API information from Spotify
-app.get("/home", async (req, res) => {
-  var code = req.query.code || null;
-  var state = req.query.state || null;
-  if (state === null) {
-    res.redirect('/#' +
-      querystring.stringify({
-        error: 'state_mismatch'
-      }));
-  } else {
-    var authOptions = {
-      url: 'https://accounts.spotify.com/api/token',
-      form: {
-        code: code,
-        redirect_uri: redirect_uri,
-        grant_type: 'authorization_code'
-      },
-      headers: {
-        'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64'))
-      },
-      json: true
-    };
-    request.post(authOptions, function(error, response, body) {
-      if (!error && response.statusCode === 200) {
-        var token = body.access_token,
-        refresh_token = body.refresh_token;
-        var options = {
-          url: 'https://api.spotify.com/v1/albums/{album_id}',
-          headers: { 'Authorization': 'Bearer ' + token },
-          json: true
-        };
-// access Spotify Web API with help of token 
-        request.get(options, function(error, response, body) {
-          console.log(body);
-          res.send(body);
-        });
-      }
-    })
-  }
-})
+app.get("/home", (req, res) => {
+  var playlist = {
+    url: 'https://api.spotify.com/v1/playlists',
+    headers: { 'Authorization': 'Bearer ' + token },
+    json: true
+  };
+  request.get(playlist, function(error, response, body) {
+    console.log(body) 
+    res.send('Home' + body);
+  })
+});
+
 //
 //Trying to connect to Mongo in Atlas
 const uri = "mongodb+srv://leenakollstrom:" + pwAtlas + "@cluster0.0sdore5.mongodb.net/test";
 
-//Make routes with mongo and first add some data
+//Make routes with mongo and first add some data, this did not work at all
 //MongoClient.connect(uri, function(err, db) {
 //  if (err) retur
 //  var playlist = db.playlist('album')
@@ -211,6 +181,7 @@ app.get('/getall', function (req, res){
 //Not sure how to make this print with JSON as asked for.
   printPlaylist();
 });
+
 //Return one item with given id mongodb:
 app.get("/:id", function(req, res){
   console.log("find album with id");
