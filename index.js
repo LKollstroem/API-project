@@ -1,75 +1,183 @@
-//Express module and FS
+//Add modules, framworks and libraries
 const express = require("express");
 const app = express();
-
+var cors = require('cors');
+var request = require ('request');
 //BodyParser for form data module
 var bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true}));
-
 //require mongodb in use
 const MongoClient = require("mongodb").MongoClient;
-
 //use querystring and axios to be able to get token from Spotify
-const queryString = require("node:querystring");
+const querystring = require("node:querystring");
 const axios = require("axios");
-
+var cookieParser = require('cookie-parser');
 //require env for use with password and username
 require("dotenv").config();
 
 //user id, password and token
-var userSpotify = process.env.USERID;
+var client_id = process.env.USERID;
 var pwAtlas = process.env.PASSWORD
+var client_secret = process.env.PASSWORD2
+var redirect_uri = 'http://localhost:8081/callback';
 var token;
 
-//create routes for SPOTIFY sign in page
-app.get("/", (req, res) => {
-    res.send(
-      "<a href='https://accounts.spotify.com/authorize?client_id=" +
-      userSpotify +
-        "&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fhome&scope=user-top-read'>Sign in</a>"
-    );
-});
-//Create routes for redirect page after authorization to get Spotify API
-app.get("/home", async (req, res) => {
-    console.log("spotify response code is " + req.query.code);
-    res.send("HOME PAGE");
-});
-//route for post request to get token
-app.get("/home", async (req, res) => {
-  const spotifyResponse = await axios.post(
-      "https://accounts.spotify.com/api/token",
-      queryString.stringify({
-        grant_type: "authorization_code",
-        code: req.query.code,
-        redirect_uri: process.env.REDIRECT_URI_DECODED,
-      }),
-      {
-        headers: {
-          Authorization: "Basic " + process.env.BASE64_AUTHORIZATION,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-  
-  console.log(spotifyResponse.data);
-  token=spotifyResponse.data;
-})
+//Generate random string containing numbers and letters on param and return
+var generateRandomString = function(length) {
+  var randomString = '';
+  var alternatives = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (var i = 0; i < length; i++) {
+    randomString += alternatives.charAt(Math.floor(Math.random() * alternatives.length));
+  }
+  return randomString;
+};
 
+//add login method with Express with redirect to callback
+app.get('/login', function(req, res) {
+  var state = generateRandomString(16);
+  var scope = 'user-read-private user-read-email';
+  res.redirect('https://accounts.spotify.com/authorize?' +
+    querystring.stringify({
+      response_type: 'code',
+      client_id: client_id,
+      scope: scope,
+      redirect_uri: redirect_uri,
+      state: state
+    }));
+});
+
+//Ask for token and if not work go to callback page:
+app.get('/callback', function(req, res) {
+  var code = req.query.code || null;
+  var state = req.query.state || null;
+  if (state === null) {
+    res.redirect('/#' +
+      querystring.stringify({
+        error: 'state_mismatch'
+      }));
+  } else {
+    var authOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      form: {
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: 'authorization_code'
+      },
+      headers: {
+        'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64'))
+      },
+      json: true
+    };
+    request.post(authOptions, function(error, response, body) {
+      if (!error && response.statusCode === 200) {
+        var token = body.access_token,
+        refresh_token = body.refresh_token;
+        var options = {
+          url: 'https://api.spotify.com/v1/me',
+          headers: { 'Authorization': 'Bearer ' + token },
+          json: true
+        };
+// access Spotify Web API with help of token 
+        request.get(options, function(error, response, body) {
+          console.log(body);
+        });
+// pass token to browser to make requests from there and it also redirects to /
+        res.redirect('/#' +
+          querystring.stringify({
+            token: token,
+            refresh_token: refresh_token
+          }));
+      } else {
+        res.redirect('/#' +
+          querystring.stringify({
+            error: 'invalid_token'
+          }));
+      }
+    });
+  }
+});
+
+//Refresh token if it gets old
+app.get('/refresh_token', function(req, res) {
+  var refresh_token = req.query.refresh_token;
+  var authOptions = {
+    url: 'https://accounts.spotify.com/api/token',
+    headers: { 'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64')) },
+    form: {
+      grant_type: 'refresh_token',
+      refresh_token: refresh_token
+    },
+    json: true
+  };
+  request.post(authOptions, function(error, response, body) {
+    if (!error && response.statusCode === 200) {
+      var token = body.access_token;
+      console.log(token);
+      res.send({
+        'access_token': token
+      });
+    }
+  });
+});
+//Create routes for home page
+//app.get("/home", async (req, res) => {
+//  res.send("HOME PAGE");
+//});
+//Lets get the firs API information from Spotify
+app.get("/home", async (req, res) => {
+  var code = req.query.code || null;
+  var state = req.query.state || null;
+  if (state === null) {
+    res.redirect('/#' +
+      querystring.stringify({
+        error: 'state_mismatch'
+      }));
+  } else {
+    var authOptions = {
+      url: 'https://accounts.spotify.com/api/token',
+      form: {
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: 'authorization_code'
+      },
+      headers: {
+        'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64'))
+      },
+      json: true
+    };
+    request.post(authOptions, function(error, response, body) {
+      if (!error && response.statusCode === 200) {
+        var token = body.access_token,
+        refresh_token = body.refresh_token;
+        var options = {
+          url: 'https://api.spotify.com/v1/albums/{album_id}',
+          headers: { 'Authorization': 'Bearer ' + token },
+          json: true
+        };
+// access Spotify Web API with help of token 
+        request.get(options, function(error, response, body) {
+          console.log(body);
+          res.send(body);
+        });
+      }
+    })
+  }
+})
 //
 //Trying to connect to Mongo in Atlas
 const uri = "mongodb+srv://leenakollstrom:" + pwAtlas + "@cluster0.0sdore5.mongodb.net/test";
 
 //Make routes with mongo and first add some data
-MongoClient.connect(uri, function(err, db) {
-  if (err) retur
-  var playlist = db.playlist('album')
-  playlist.insert({artist: 'Roxette', song: 'Love', album: 'Lovers', year:'2019' }, function(err, result) {
-    playlist.find({artist: 'Roxette'}).toArray(function(err, docs) {
-      console.log(docs[0])
-      db.close()
-    })
-  })
-})
+//MongoClient.connect(uri, function(err, db) {
+//  if (err) retur
+//  var playlist = db.playlist('album')
+//  playlist.insert({artist: 'Roxette', song: 'Love', album: 'Lovers', year:'2019' }, function(err, result) {
+//    playlist.find({artist: 'Roxette'}).toArray(function(err, docs) {
+//      console.log(docs[0])
+//      db.close()
+//    })
+//  })
+//})
 
 //Then routes to get the data
 app.get('/getall', function (req, res){
@@ -105,53 +213,46 @@ app.get('/getall', function (req, res){
 });
 //Return one item with given id mongodb:
 app.get("/:id", function(req, res){
+  console.log("find album with id");
+//connection object
   const client = new MongoClient(uri, {
-    useNewUrlParser:true,
-    useUnifiedTopology:true
+  useNewUrlParser:true,
+  useUnifiedTopology:true
   })
-  res.send("Get song with id: " + req.params.id);
-//pare data to make it look good
-  var results = '<H1>GET ALBUM</H1><style>table, td {background-color: powderblue; border: 1px solid black;}</style><table border="1">';
-  for(var i =0; i<data.length; i++){
-        results +=
-        '<tr>'+
-        '<td>' +data[i].id+'</td>'+
-        '<td>' +data[i].artist+'</td>'+
-        '<td>' +data[i].song+'</td>'+
-        '<td>' +data[i].album+'</td>'+
-        '<td>' +data[i].year+'</td>'+
-        '</tr>';
+  console.log("start connection");
+  async function printId(){
+    try{
+//Mongo connection query details
+    await client.connect();
+    const collection = client.db("album").collection("id");
+//Make query
+    var result = await collection
+      .find() //all items
+      .limit(10) // we want only 10
+      .toArray()
+    res.send(result);
+
+    } catch(e){
+      console.log(e);
+    }finally {
+      await client.close();
+      console.log("Mongodb connecton has been closed")
     }
-  res.send(results);
-});  
-//create routes for add function
+  }
+//Not sure how to make this print with JSON as asked for.
+printId();
+});
+
+//Add data
 app.post("/add", function(req, res){
-  const client = new MongoClient(uri, {
-    useNewUrlParser:true,
-    useUnifiedTopology:true
-  })
-  var id = data.length + 1;
-  var id;
-  var artist = req.body.artist;
-  var song = req.body.song;
-  var album = req.body.album;
-  var year = req.body.year;
-  res.send("ADD SONG");
-  
-//remind if empty
-  if(artist === "" || song === "" || album === "" || year === ""){
-    res.send('Please fill in all fields!');
-  }else{
     res.send("Add Song: " + song + artist + album + "(" + year + ")");
-  }  
-});  
+});
 
 //delete function not working yet
 app.delete("/remove/:id", function(req, res){
   res.send("Remove album by " + req.params.id);
 });  
 //put function -- not working
-//delete function
 app.put("/update/:id", function(req, res){
   res.send("Modify album by id " + req.params.id);
 });  
@@ -162,5 +263,5 @@ app.listen(PORT, function(){
     console.log('App listening on port %d', PORT);
 });
 app.get("/", (req, res) => {
-  res.send("Home");
+  res.send("First page - The page where you end up when your code for the api is not working");
 });
