@@ -19,7 +19,7 @@ require("dotenv").config();
 var client_id = process.env.USERID;
 var pwAtlas = process.env.PASSWORD
 var client_secret = process.env.PASSWORD2
-var redirect_uri = 'http://localhost:8081/callback';
+var redirect_uri = 'http://localhost:3000';
 var token;
 
 //Generate random string containing numbers and letters on param and return
@@ -47,7 +47,7 @@ app.get('/login', function(req, res) {
 });
 
 //Ask for token and if not work go to callback page:
-app.get('/callback', function(req, res) {
+app.get('/', function(req, res) {
   var code = req.query.code || null;
   var state = req.query.state || null;
   if (state === null) {
