@@ -229,7 +229,7 @@ app.put("/update/:id", function(req,res){
 });  
 
 //set web server to listen to port
-var PORT = process.env.PORT || 8081;
+var PORT = process.env.PORT || 3000;
 app.listen(PORT, function(){
     console.log('App listening on port %d', PORT);
 });
