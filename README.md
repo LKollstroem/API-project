@@ -14,3 +14,5 @@ I have routed to:
 /  /Home  /getall  /:id  /add  /remove/:id  /update/:id
 
 Tested in POSTMAN and it seemed to work fine there.
+Github:
+https://github.com/LKollstroem/API-project
