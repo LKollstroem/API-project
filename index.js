@@ -47,7 +47,7 @@ app.get('/login', function(req, res) {
 });
 
 //Ask for token and if not work go to callback page:
-app.get('/', function(req, res) {
+app.get('/callback', function(req, res) {
   var code = req.query.code || null;
   var state = req.query.state || null;
   if (state === null) {
