@@ -19,7 +19,7 @@ require("dotenv").config();
 var client_id = process.env.USERID;
 var pwAtlas = process.env.PASSWORD
 var client_secret = process.env.PASSWORD2
-var redirect_uri = 'http://localhost:3000';
+var redirect_uri = 'http://localhost:8081/callback';
 var token;
 
 //Generate random string containing numbers and letters on param and return
@@ -229,7 +229,7 @@ app.put("/update/:id", function(req,res){
 });  
 
 //set web server to listen to port
-var PORT = process.env.PORT || 3000;
+var PORT = process.env.PORT || 8081;
 app.listen(PORT, function(){
     console.log('App listening on port %d', PORT);
 });
