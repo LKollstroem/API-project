@@ -16,7 +16,7 @@ var cookieParser = require('cookie-parser');
 require("dotenv").config();
 
 //user id, password and token
-var client_id = process.env.USERID;
+var client_id = process.env.USERID
 var pwAtlas = process.env.PASSWORD
 var client_secret = process.env.PASSWORD2
 var redirect_uri = 'http://localhost:8081/callback';
