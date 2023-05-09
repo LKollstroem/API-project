@@ -35,7 +35,7 @@ var generateRandomString = function(length) {
 //add login method with Express with redirect to callback
 app.get('/login', function(req, res) {
   var state = generateRandomString(16);
-  var scope = 'user-read-private user-read-email';
+  var scope = "streaming user-read-email user-read-private"
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
